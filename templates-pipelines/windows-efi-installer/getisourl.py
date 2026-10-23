@@ -1,12 +1,14 @@
 #!/usr/bin/python
 
+import sys
+
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.select import Select
 
 options = Options()
-options.headless = True
+options.add_argument("--headless=new")
 
 driver = webdriver.Chrome(options=options)
 driver.implicitly_wait(10)
@@ -26,9 +28,10 @@ try:
     button_element = driver.find_element(By.ID, "submit-sku")
     button_element.click()
 
-    download_link = driver.find_element(By.LINK_TEXT, "64-bit Download")
+    download_link = driver.find_element(By.PARTIAL_LINK_TEXT, "64-bit")
     print(download_link.get_attribute("href"))
-except:
-    pass
-
-driver.close()
+except Exception as e:
+    print(f"Failed to obtain the download URL: {e}", file=sys.stderr)
+    sys.exit(1)
+finally:
+    driver.quit()
