@@ -13,10 +13,14 @@ IN_CLUSTER_IMAGE_REGISTRY=""
 
 if [[ "${IS_OKD}" == "true" ]]; then
   oc patch configs.imageregistry.operator.openshift.io/cluster --patch '{"spec":{"defaultRoute":true}}' --type=merge
+  # wait until the image-registry operator creates default-route
+  timeout 10m bash <<- EOF
+  until oc get route default-route -n openshift-image-registry; do
+    sleep 5
+  done
+EOF
   IMAGE_REGISTRY="$(oc get route default-route -n openshift-image-registry --template='{{ .spec.host }}')"
   IN_CLUSTER_IMAGE_REGISTRY="image-registry.openshift-image-registry.svc:5000"
-  # wait for the route
-  sleep 5
 
   podman login -u kubeadmin -p "$(oc whoami -t)" --tls-verify=false "$IMAGE_REGISTRY"
 elif [[ "${IS_MINIKUBE}" == "true" ]]; then
