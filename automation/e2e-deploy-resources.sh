@@ -31,6 +31,17 @@ kubectl apply -f "https://github.com/kubevirt/containerized-data-importer/releas
 
 kubectl apply -f "https://github.com/kubevirt/containerized-data-importer/releases/download/${CDI_VERSION}/cdi-cr.yaml"
 
+# Wait for the TektonConfig, then disable SharedResource: its v0.82.0 webhook
+# crashloops on the injected TLS flags and its PDB blocks node drains.
+timeout 10m bash <<- EOF
+  until kubectl get tektonconfig config > /dev/null 2>&1; do
+    sleep 5
+  done
+EOF
+
+kubectl patch tektonconfig config --type=merge \
+  -p '{"spec":{"platforms":{"openshift":{"sharedResource":{"enabled":false}}}}}'
+
 # wait for tekton pipelines
 kubectl rollout status -n openshift-operators deployment/openshift-pipelines-operator --timeout 10m
 
